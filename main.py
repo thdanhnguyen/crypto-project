@@ -5,7 +5,7 @@ from typing import List
 import asyncio
 import time
 import random
-from passlib.context import CryptContext
+import bcrypt
 
 import models
 import schemas
@@ -15,7 +15,15 @@ import hashlib
 from auth import create_access_token, create_refresh_token, get_current_user
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 # Tables are created in startup_event for better stability on Cloud
 # models.Base.metadata.create_all(bind=engine)
@@ -74,7 +82,7 @@ def register_user(user: schemas.UserRegister, db: Session = Depends(get_db)):
     existing_user = db.query(models.User).filter(models.User.name == user.name).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    hashed_password = pwd_context.hash(user.password)
+    hashed_password = hash_password(user.password)
     # Generate a unique wallet address
     wallet_addr = "0x" + hashlib.sha256(f"{user.name}{time.time()}".encode()).hexdigest()[:10]
     db_user = models.User(name=user.name, password=hashed_password, wallet_address=wallet_addr)
@@ -93,7 +101,7 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid username or password")
     
     try:
-        is_valid = pwd_context.verify(user.password, db_user.password)
+        is_valid = verify_password(user.password, db_user.password)
     except Exception:
         # Fallback for old accounts with plain text passwords
         is_valid = (user.password == db_user.password)
@@ -115,7 +123,7 @@ def web3_login(login_data: schemas.Web3Login, db: Session = Depends(get_db)):
         # Tự động đăng ký nếu chưa có
         random_name = f"Node_{wallet_address[-4:]}"
         # Mật khẩu rỗng hoặc dummy vì đăng nhập bằng Web3
-        hashed_password = pwd_context.hash("web3_auth")
+        hashed_password = hash_password("web3_auth")
         db_user = models.User(name=random_name, password=hashed_password, wallet_address=wallet_address)
         
         # Tặng số dư khởi tạo cho ví Web3 (giống như handleAuth cũ)
@@ -299,7 +307,7 @@ async def market_maker_bot():
             db = SessionLocal()
             ai_user = db.query(models.User).filter(models.User.name == "Grid_AI").first()
             if not ai_user:
-                hashed = pwd_context.hash("bot_password")
+                hashed = hash_password("bot_password")
                 ai_user = models.User(name="Grid_AI", password=hashed, token_balance=10000000, energy_balance=100000)
                 db.add(ai_user)
                 db.commit()
