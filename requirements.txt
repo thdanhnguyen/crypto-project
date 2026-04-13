@@ -4,3 +4,6 @@ sqlalchemy
 pydantic
 websockets
 passlib[bcrypt]
+python-jose[cryptography]
+python-dotenv
+psycopg2-binary
