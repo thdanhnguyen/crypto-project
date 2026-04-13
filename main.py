@@ -16,7 +16,8 @@ from auth import create_access_token, create_refresh_token, get_current_user
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 def hash_password(password: str) -> str:
-    salt = bcrypt.gensalt()
+    # Reduce rounds to 4 (minimum allowed) for faster hashing on Free Tier VMs
+    salt = bcrypt.gensalt(rounds=4)
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -85,7 +86,13 @@ def register_user(user: schemas.UserRegister, db: Session = Depends(get_db)):
     hashed_password = hash_password(user.password)
     # Generate a unique wallet address
     wallet_addr = "0x" + hashlib.sha256(f"{user.name}{time.time()}".encode()).hexdigest()[:10]
-    db_user = models.User(name=user.name, password=hashed_password, wallet_address=wallet_addr)
+    db_user = models.User(
+        name=user.name, 
+        password=hashed_password, 
+        wallet_address=wallet_addr,
+        token_balance=5000.0,
+        energy_balance=2000.0
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

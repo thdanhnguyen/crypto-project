@@ -118,7 +118,6 @@ function App() {
         if (isRegisterMode) {
             u = await api.registerUser(username, password);
             toast.success("Wallet Created & Registered successfully!", { icon: "🌱" });
-            await api.depositFunds(u.id, 5000, 2000); 
             toast("Tặng 5000 USDT & 2000 kWh cho Tài Khoản Năng Lượng Mới", { icon: "🎁" });
         } else {
             u = await api.loginUser(username, password);
