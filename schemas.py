@@ -11,6 +11,10 @@ class UserLogin(BaseModel):
     name: str
     password: str
 
+class Web3Login(BaseModel):
+    wallet_address: str
+    signature: Optional[str] = None
+
 class UserDeposit(BaseModel):
     token_amount: float = 0.0
     energy_amount: float = 0.0
@@ -70,3 +74,19 @@ class MarketStatsResponse(BaseModel):
     total_volume: float
     recommended_buy: float
     recommended_sell: float
+
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    name: Optional[str] = None
+    wallet_address: Optional[str] = None
+    user_id: Optional[int] = None
+
+class AuthResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    user: UserResponse

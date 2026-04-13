@@ -12,6 +12,8 @@ import schemas
 from database import engine, get_db, SessionLocal
 from core import process_order, execute_direct_transfer
 import hashlib
+from auth import create_access_token, create_refresh_token, get_current_user
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -67,7 +69,7 @@ def read_root():
 
 # --- USER ENDPOINTS ---
 
-@app.post("/register", response_model=schemas.UserResponse)
+@app.post("/register", response_model=schemas.AuthResponse)
 def register_user(user: schemas.UserRegister, db: Session = Depends(get_db)):
     existing_user = db.query(models.User).filter(models.User.name == user.name).first()
     if existing_user:
@@ -79,9 +81,12 @@ def register_user(user: schemas.UserRegister, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
 
-@app.post("/login", response_model=schemas.UserResponse)
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": db_user}
+
+@app.post("/login", response_model=schemas.AuthResponse)
 def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.name == user.name).first()
     if not db_user:
@@ -95,7 +100,62 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
         
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid username or password")
-    return db_user
+        
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": db_user}
+
+@app.post("/web3_login", response_model=schemas.AuthResponse)
+def web3_login(login_data: schemas.Web3Login, db: Session = Depends(get_db)):
+    wallet_address = login_data.wallet_address.lower()
+    # Tìm kiếm không phân biệt hoa thường với startswith hoặc exact match
+    db_user = db.query(models.User).filter(models.User.wallet_address.ilike(wallet_address)).first()
+    
+    if not db_user:
+        # Tự động đăng ký nếu chưa có
+        random_name = f"Node_{wallet_address[-4:]}"
+        # Mật khẩu rỗng hoặc dummy vì đăng nhập bằng Web3
+        hashed_password = pwd_context.hash("web3_auth")
+        db_user = models.User(name=random_name, password=hashed_password, wallet_address=wallet_address)
+        
+        # Tặng số dư khởi tạo cho ví Web3 (giống như handleAuth cũ)
+        db_user.token_balance = 5000.0
+        db_user.energy_balance = 2000.0
+        
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": db_user}
+
+@app.post("/refresh", response_model=schemas.AuthResponse)
+def refresh_token(refresh_data: schemas.Token, db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    from auth import SECRET_KEY, ALGORITHM
+    from jose import JWTError, jwt
+    try:
+        payload = jwt.decode(refresh_data.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise credentials_exception
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    db_user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    if db_user is None:
+        raise credentials_exception
+        
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user": db_user}
 
 @app.get("/users/{user_id}", response_model=schemas.UserResponse)
 def read_user(user_id: int, db: Session = Depends(get_db)):
@@ -111,7 +171,10 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 @app.post("/users/{user_id}/deposit", response_model=schemas.UserResponse)
-def deposit_funds(user_id: int, deposit: schemas.UserDeposit, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def deposit_funds(user_id: int, deposit: schemas.UserDeposit, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to deposit for this user")
+        
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -126,7 +189,9 @@ def deposit_funds(user_id: int, deposit: schemas.UserDeposit, background_tasks: 
     return db_user
 
 @app.post("/transfer", response_model=schemas.TransactionResponse)
-def transfer_funds(transfer: schemas.DirectTransferCreate, user_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def transfer_funds(transfer: schemas.DirectTransferCreate, user_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to transfer for this user")
     seller = db.query(models.User).filter(models.User.id == user_id).first()
     buyer = db.query(models.User).filter(models.User.wallet_address == transfer.to_wallet_address).first()
     
@@ -148,7 +213,9 @@ def transfer_funds(transfer: schemas.DirectTransferCreate, user_id: int, backgro
 # --- ORDER ENDPOINTS ---
 
 @app.post("/orders/", response_model=schemas.OrderResponse)
-def place_order(order: schemas.OrderCreate, user_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def place_order(order: schemas.OrderCreate, user_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to place order for this user")
     if order.type not in ["buy", "sell"]:
         raise HTTPException(status_code=400, detail="Order type must be 'buy' or 'sell'")
     if order.amount <= 0 or order.price <= 0:
@@ -171,10 +238,13 @@ def place_order(order: schemas.OrderCreate, user_id: int, background_tasks: Back
     return db_order
 
 @app.delete("/orders/{order_id}")
-def cancel_order(order_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def cancel_order(order_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order or order.status != "open":
         raise HTTPException(status_code=400, detail="Order not found or not open")
+        
+    if order.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to cancel this order")
 
     user = db.query(models.User).filter(models.User.id == order.user_id).first()
     if order.type == "buy":
