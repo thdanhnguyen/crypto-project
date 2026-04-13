@@ -17,8 +17,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Create DB tables
-models.Base.metadata.create_all(bind=engine)
+# Tables are created in startup_event for better stability on Cloud
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="P2P Energy Trading Crypto Enhanced")
 
@@ -329,5 +329,10 @@ async def market_maker_bot():
 
 @app.on_event("startup")
 async def startup_event():
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        print("✅ Database tables created successfully!")
+    except Exception as e:
+        print(f"❌ Error creating database tables: {e}")
     asyncio.create_task(market_maker_bot())
 
