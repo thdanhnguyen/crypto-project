@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from './api';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
+import { BrowserProvider, formatEther } from 'ethers';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -16,6 +17,7 @@ function App() {
   const [password, setPassword] = useState('');
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [view, setView] = useState('dashboard'); // 'dashboard' or 'home'
+  const [web3Balance, setWeb3Balance] = useState("0");
 
   const [orderType, setOrderType] = useState('buy');
   const [amount, setAmount] = useState('');
@@ -57,6 +59,7 @@ function App() {
 
     if(user) {
         loadData(user.id);
+        fetchWeb3Balance(user.wallet_address);
     }
 
     ws.current = new WebSocket('ws://127.0.0.1:8000/ws');
@@ -70,6 +73,42 @@ function App() {
         if(ws.current) ws.current.close();
     };
   }, [user]);
+
+  const fetchWeb3Balance = async (address) => {
+      try {
+          if (window.ethereum) {
+              const provider = new BrowserProvider(window.ethereum);
+              const balance = await provider.getBalance(address);
+              setWeb3Balance(formatEther(balance));
+          }
+      } catch (err) {
+          console.error("Failed to fetch Web3 Balance:", err);
+      }
+  };
+
+  const handleWeb3Login = async () => {
+      if (!window.ethereum) {
+          toast.error("Vui lòng cài đặt MetaMask để dùng chức năng này!");
+          return;
+      }
+      try {
+          const provider = new BrowserProvider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          const signer = await provider.getSigner();
+          const address = await signer.getAddress();
+          
+          toast.loading("Đang xác thực ví qua mạng blockchain...", { id: "web3Auth" });
+          const u = await api.web3Login(address, "dummy_signature");
+          setUser(u);
+          localStorage.setItem('eco_exchange_user_id', u.id);
+          toast.success("Đăng nhập Định danh Web3 thành công!", { id: "web3Auth" });
+          
+          fetchWeb3Balance(address);
+      } catch (err) {
+          toast.dismiss("web3Auth");
+          toast.error("Lỗi kết nối Web3: " + err.message);
+      }
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -178,8 +217,16 @@ function App() {
                 <div className="auth-form">
                     <div style={{marginBottom: '2rem'}}>
                         <h2 style={{fontSize: '2rem'}}>{isRegisterMode ? 'Tham Gia Lưới Điện' : 'Đăng Nhập Node'}</h2>
-                        <p style={{color: '#64748b'}}>Sử dụng công nghệ Blockchain & Smart Escrow</p>
+                        <p style={{color: '#64748b'}}>Sử dụng định danh phi tập trung (Web3)</p>
                     </div>
+
+                    <button type="button" onClick={handleWeb3Login} style={{width: '100%', marginBottom: '1.5rem', height: '54px', background: 'linear-gradient(135deg, #f6851b, #f56c08)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="24" alt="MetaMask" style={{filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'}} />
+                        Đăng Nhập bằng MetaMask (Đề xuất)
+                    </button>
+                    
+                    <div style={{textAlign: 'center', marginBottom: '1rem', color: '#94a3b8', fontSize: '0.85rem'}}>HOẶC DÙNG TÀI KHOẢN TRUYỀN THỐNG</div>
+
                     <form onSubmit={handleAuth}>
                         <div>
                             <label className="input-label">Mã định danh (Username)</label>
@@ -266,7 +313,14 @@ function App() {
                              <p className="input-label">Số dư USDT</p>
                              <h3 className="text-gradient" style={{fontSize: '1.5rem'}}>${user.token_balance.toFixed(2)}</h3>
                         </div>
-                        <div style={{background: 'rgba(0,0,0,0.02)', padding: '1.5rem', borderRadius: '12px'}}>
+                        <div style={{background: 'rgba(246,133,27,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(246,133,27,0.1)'}}>
+                             <p className="input-label" style={{display: 'flex', justifyContent: 'space-between'}}>
+                                 <span>Số dư Testnet (ETH)</span>
+                                 <span style={{cursor: 'pointer', color: '#f6851b'}} onClick={() => fetchWeb3Balance(user.wallet_address)}>🔄</span>
+                             </p>
+                             <h3 style={{fontSize: '1.5rem', color: '#f6851b'}}>{parseFloat(web3Balance).toFixed(4)} <span style={{fontSize: '0.9rem', color: '#64748b', fontWeight: '500'}}>ETH</span></h3>
+                        </div>
+                        <div style={{background: 'rgba(0,0,0,0.02)', padding: '1.5rem', borderRadius: '12px', gridColumn: '1 / -1'}}>
                              <p className="input-label">Số điện hiện có (kWh)</p>
                              <h3 style={{fontSize: '1.5rem'}}>{user.energy_balance.toFixed(2)} <span style={{fontSize: '0.9rem', color: '#64748b', fontWeight: '500'}}>kWh</span></h3>
                         </div>
@@ -278,7 +332,7 @@ function App() {
                                 setUser(null);
                                 setUsername('');
                                 setPassword('');
-                                localStorage.removeItem('eco_exchange_user_id');
+                                localStorage.clear();
                                 if(ws.current) ws.current.close();
                             }} 
                             className="btn-danger" 
