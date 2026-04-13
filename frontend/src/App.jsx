@@ -62,7 +62,8 @@ function App() {
         fetchWeb3Balance(user.wallet_address);
     }
 
-    ws.current = new WebSocket('ws://127.0.0.1:8000/ws');
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws';
+    ws.current = new WebSocket(wsUrl);
     ws.current.onmessage = (event) => {
         if (event.data === "update") {
             if(user) loadData(user.id);
