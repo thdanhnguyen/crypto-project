@@ -204,10 +204,13 @@ function App() {
             <Toaster position="top-center" toastOptions={{ style: {fontFamily: 'Outfit'} }}/>
             <div className="auth-wrapper">
                 <div className="auth-hero">
-                    <div className="icon-float" style={{top: '-50px', left: '-50px', fontSize: '20rem'}}>🌿</div>
-                    <div className="icon-float" style={{bottom: '-20px', right: '-20px', fontSize: '15rem', opacity: 0.1, animationDelay:'1s'}}>☀️</div>
+                    <img src="/logo.png" alt="Background Logo" className="icon-float" style={{top: '-50px', left: '-50px', width: '300px', opacity: 0.1}} />
+                    <img src="/logo.png" alt="Background Logo" className="icon-float" style={{bottom: '-20px', right: '-20px', width: '250px', opacity: 0.05, animationDelay:'1s'}} />
                     
-                    <span className="sdg-pill" style={{marginBottom: 'auto'}}>SDG 7: Clean Energy</span>
+                    <div style={{marginBottom: 'auto', display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 10}}>
+                         <img src="/logo.png" alt="Wattchain Logo" style={{height: '80px', width: '80px', objectFit: 'contain', background: 'var(--white)', borderRadius: '20px', padding: '10px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)'}} />
+                         <span style={{fontSize: '2.5rem', fontWeight: '800', color: 'var(--white)', letterSpacing: '-1px'}}>Wattchain</span>
+                    </div>
                     
                     <div>
                         <h1>Empowering<br/>The Future of<br/><span style={{color: 'var(--accent)'}}>Green Energy.</span></h1>
@@ -260,7 +263,7 @@ function App() {
         <div className="card header-area">
             <div>
                 <h2 className="text-gradient" style={{fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                    🌿 P2P Eco-Exchange
+                    <img src="/logo.png" alt="Wattchain Logo" style={{height: '2.5rem', width: 'auto', objectFit: 'contain'}} /> Wattchain
                 </h2>
                 <div style={{marginTop: '0.5rem', display: 'flex', gap: '0.5rem'}}>
                     <span className="badge badge-hash">👤 {user.name}</span>
