@@ -313,42 +313,44 @@ async def market_maker_bot():
         await asyncio.sleep(12)
         try:
             db = SessionLocal()
-            ai_user = db.query(models.User).filter(models.User.name == "Grid_AI").first()
-            if not ai_user:
-                hashed = hash_password("bot_password")
-                ai_user = models.User(name="Grid_AI", password=hashed, token_balance=10000000, energy_balance=100000)
-                db.add(ai_user)
-                db.commit()
-                db.refresh(ai_user)
+            try:
+                ai_user = db.query(models.User).filter(models.User.name == "Grid_AI").first()
+                if not ai_user:
+                    hashed = hash_password("bot_password")
+                    ai_user = models.User(name="Grid_AI", password=hashed, token_balance=10000000, energy_balance=100000)
+                    db.add(ai_user)
+                    db.commit()
+                    db.refresh(ai_user)
 
-            current_price = 2.0
-            last_tx = db.query(models.Transaction).order_by(models.Transaction.id.desc()).first()
-            if last_tx:
-                current_price = last_tx.price
-            
-            order_type = random.choice(["buy", "sell"])
-            amount = round(random.uniform(5.0, 50.0), 1)
-            price = round(current_price * random.uniform(0.95, 1.05), 2)
-            
-            db_order = models.Order(
-                type=order_type,
-                user_id=ai_user.id,
-                amount=amount,
-                price=price,
-                status="open"
-            )
-            process_order(db, db_order)
-            db.close()
+                current_price = 2.0
+                last_tx = db.query(models.Transaction).order_by(models.Transaction.id.desc()).first()
+                if last_tx:
+                    current_price = last_tx.price
+                
+                order_type = random.choice(["buy", "sell"])
+                amount = round(random.uniform(5.0, 50.0), 1)
+                price = round(current_price * random.uniform(0.95, 1.05), 2)
+                
+                db_order = models.Order(
+                    type=order_type,
+                    user_id=ai_user.id,
+                    amount=amount,
+                    price=price,
+                    status="open"
+                )
+                process_order(db, db_order)
+            finally:
+                db.close()
             await notify_clients()
-        except Exception:
-            pass
+        except Exception as e:
+            print("Bot Error:", e)
 
 @app.on_event("startup")
 async def startup_event():
     try:
         models.Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created successfully!")
+        print("[SUCCESS] Database tables created successfully!")
     except Exception as e:
-        print(f"❌ Error creating database tables: {e}")
+        print(f"[ERROR] Error creating database tables: {e}")
     asyncio.create_task(market_maker_bot())
 

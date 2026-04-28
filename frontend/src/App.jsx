@@ -46,7 +46,7 @@ function App() {
   };
 
   useEffect(() => {
-    const savedUserId = localStorage.getItem('eco_exchange_user_id');
+    const savedUserId = sessionStorage.getItem('eco_exchange_user_id');
     if (savedUserId && !user) {
         api.getUser(parseInt(savedUserId)).then(u => {
             setUser(u);
@@ -54,7 +54,7 @@ function App() {
             fetchWeb3Balance(u.wallet_address);
             toast.success(`Chào mừng trở lại, ${u.name}!`, { icon: "👋" });
         }).catch(() => {
-            localStorage.removeItem('eco_exchange_user_id');
+            sessionStorage.removeItem('eco_exchange_user_id');
         });
     }
 
@@ -62,7 +62,7 @@ function App() {
     ws.current = new WebSocket(wsUrl);
     ws.current.onmessage = (event) => {
         if (event.data === "update") {
-            const uid = localStorage.getItem('eco_exchange_user_id');
+            const uid = sessionStorage.getItem('eco_exchange_user_id');
             if(uid) loadData(uid);
         }
     };
@@ -98,7 +98,7 @@ function App() {
           toast.loading("Đang xác thực ví qua mạng blockchain...", { id: "web3Auth" });
           const u = await api.web3Login(address, "dummy_signature");
           setUser(u);
-          localStorage.setItem('eco_exchange_user_id', u.id);
+          sessionStorage.setItem('eco_exchange_user_id', u.id);
           toast.success("Đăng nhập Định danh Web3 thành công!", { id: "web3Auth" });
           
           fetchWeb3Balance(address);
@@ -121,7 +121,7 @@ function App() {
             toast.success("Đăng nhập Node thành công!");
         }
         setUser(u);
-        localStorage.setItem('eco_exchange_user_id', u.id);
+        sessionStorage.setItem('eco_exchange_user_id', u.id);
         loadData(u.id);
         fetchWeb3Balance(u.wallet_address);
     } catch (err) {
@@ -334,7 +334,7 @@ function App() {
                                 setUser(null);
                                 setUsername('');
                                 setPassword('');
-                                localStorage.clear();
+                                sessionStorage.clear();
                                 if(ws.current) ws.current.close();
                             }} 
                             className="btn-danger" 

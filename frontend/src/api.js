@@ -13,7 +13,7 @@ function onRefreshed(token) {
 }
 
 const fetchWithAuth = async (url, options = {}) => {
-    let accessToken = localStorage.getItem('eco_access_token');
+    let accessToken = sessionStorage.getItem('eco_access_token');
     
     options.headers = {
         ...options.headers,
@@ -28,7 +28,7 @@ const fetchWithAuth = async (url, options = {}) => {
     if (res.status === 401 && accessToken) {
         if (!isRefreshing) {
             isRefreshing = true;
-            const refreshToken = localStorage.getItem('eco_refresh_token');
+            const refreshToken = sessionStorage.getItem('eco_refresh_token');
             if (refreshToken) {
                 try {
                     const rfRes = await fetch(`${API_URL}/refresh`, {
@@ -38,12 +38,12 @@ const fetchWithAuth = async (url, options = {}) => {
                     });
                     if (rfRes.ok) {
                         const newAuth = await rfRes.json();
-                        localStorage.setItem('eco_access_token', newAuth.access_token);
-                        localStorage.setItem('eco_refresh_token', newAuth.refresh_token);
+                        sessionStorage.setItem('eco_access_token', newAuth.access_token);
+                        sessionStorage.setItem('eco_refresh_token', newAuth.refresh_token);
                         onRefreshed(newAuth.access_token);
                     } else {
                         // Logout
-                        localStorage.clear();
+                        sessionStorage.clear();
                         window.location.reload();
                     }
                 } catch(e) {
@@ -53,7 +53,7 @@ const fetchWithAuth = async (url, options = {}) => {
                 }
             } else {
                 isRefreshing = false;
-                localStorage.clear();
+                sessionStorage.clear();
                 window.location.reload();
             }
         }
@@ -70,8 +70,8 @@ const fetchWithAuth = async (url, options = {}) => {
 };
 
 const handleAuthTokens = (authData) => {
-    localStorage.setItem('eco_access_token', authData.access_token);
-    localStorage.setItem('eco_refresh_token', authData.refresh_token);
+    sessionStorage.setItem('eco_access_token', authData.access_token);
+    sessionStorage.setItem('eco_refresh_token', authData.refresh_token);
     return authData.user;
 };
 

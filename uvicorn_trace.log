@@ -1,0 +1,20 @@
+INFO:     Started server process [7228]
+INFO:     Waiting for application startup.
+[SUCCESS] Database tables created successfully!
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59285 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59286 - "POST /login HTTP/1.1" 200 OK
+DEBUG: get_current_user invoked with token: eyJhbGciOi...
+DEBUG: get_current_user querying user 17
+DEBUG: get_current_user fetched user: True
+DEBUG: place_order started for user 17, type buy
+DEBUG: process_order committed new_order, calling match_orders
+DEBUG: match_orders executing trade between 836 and 835
+DEBUG: execute_trade finished
+DEBUG: Before subtracting buy_order.amount
+DEBUG: Before subtracting sell_order.amount
+DEBUG: Checking amounts for completion
+DEBUG: Calling final db.commit in match_orders
+DEBUG: final db.commit done
+DEBUG: buy_order completed, breaking

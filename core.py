@@ -16,18 +16,19 @@ def process_order(db: Session, new_order: Order):
         if user.token_balance < total_cost:
             raise ValueError("Insufficient tokens")
         user.token_balance -= total_cost
-        db.commit()
+        db.flush()
     elif new_order.type == "sell":
         if user.energy_balance < new_order.amount:
             raise ValueError("Insufficient energy")
         user.energy_balance -= new_order.amount
-        db.commit()
+        db.flush()
 
     db.add(new_order)
-    db.commit()
+    db.flush()
     db.refresh(new_order)
 
     match_orders(db)
+    db.commit()
 
 def match_orders(db: Session):
     buy_orders = db.query(Order).filter(Order.type == "buy", Order.status == "open").order_by(Order.price.desc(), Order.timestamp.asc()).all()
@@ -55,7 +56,7 @@ def match_orders(db: Session):
                 if sell_order.amount == 0:
                     sell_order.status = "completed"
                     
-                db.commit()
+                db.flush()
                 if buy_order.status == "completed":
                     break
 
@@ -89,7 +90,7 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
         b_hash = hashlib.sha256(str(time.time()).encode()).hexdigest()
         new_block = Block(block_hash=b_hash)
         db.add(new_block)
-        db.commit()
+        db.flush()
         db.refresh(new_block)
         active_block_id = new_block.id
     else:
@@ -109,7 +110,7 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
         gas_fee=gas_fee
     )
     db.add(trx)
-    db.commit()
+    db.flush()
 
 def execute_direct_transfer(db: Session, buyer: User, seller: User, amount: float, price: float):
     total_cost = amount * price
