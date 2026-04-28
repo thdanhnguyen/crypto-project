@@ -46,34 +46,31 @@ function App() {
   };
 
   useEffect(() => {
-    // Check if user is saved in localStorage
     const savedUserId = localStorage.getItem('eco_exchange_user_id');
     if (savedUserId && !user) {
         api.getUser(parseInt(savedUserId)).then(u => {
             setUser(u);
+            loadData(u.id);
+            fetchWeb3Balance(u.wallet_address);
             toast.success(`Chào mừng trở lại, ${u.name}!`, { icon: "👋" });
         }).catch(() => {
             localStorage.removeItem('eco_exchange_user_id');
         });
     }
 
-    if(user) {
-        loadData(user.id);
-        fetchWeb3Balance(user.wallet_address);
-    }
-
     const wsUrl = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws';
     ws.current = new WebSocket(wsUrl);
     ws.current.onmessage = (event) => {
         if (event.data === "update") {
-            if(user) loadData(user.id);
+            const uid = localStorage.getItem('eco_exchange_user_id');
+            if(uid) loadData(uid);
         }
     };
 
     return () => {
         if(ws.current) ws.current.close();
     };
-  }, [user]);
+  }, []);
 
   const fetchWeb3Balance = async (address) => {
       try {
@@ -125,6 +122,8 @@ function App() {
         }
         setUser(u);
         localStorage.setItem('eco_exchange_user_id', u.id);
+        loadData(u.id);
+        fetchWeb3Balance(u.wallet_address);
     } catch (err) {
         toast.error(err.message);
     }
