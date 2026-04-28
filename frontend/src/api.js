@@ -8,16 +8,19 @@ function subscribeTokenRefresh(cb) {
 }
 
 function onRefreshed(token) {
-    refreshSubscribers.forEach(cb => cb(token));
+    refreshSubscribers.forEach(cb => cb(null, token));
+    refreshSubscribers = [];
+}
+
+function onRefreshFailed() {
+    refreshSubscribers.forEach(cb => cb(new Error('Session expired'), null));
     refreshSubscribers = [];
 }
 
 const fetchWithAuth = async (url, options = {}) => {
     let accessToken = sessionStorage.getItem('eco_access_token');
     
-    options.headers = {
-        ...options.headers,
-    };
+    options.headers = { ...options.headers };
     
     if (accessToken) {
         options.headers["Authorization"] = `Bearer ${accessToken}`;
@@ -41,26 +44,33 @@ const fetchWithAuth = async (url, options = {}) => {
                         sessionStorage.setItem('eco_access_token', newAuth.access_token);
                         sessionStorage.setItem('eco_refresh_token', newAuth.refresh_token);
                         onRefreshed(newAuth.access_token);
+                        // Retry original request with new token
+                        options.headers["Authorization"] = `Bearer ${newAuth.access_token}`;
+                        return fetch(url, options);
                     } else {
-                        // Logout
+                        onRefreshFailed();
                         sessionStorage.clear();
                         window.location.reload();
+                        return res;
                     }
                 } catch(e) {
                     console.error("Lỗi refresh:", e);
+                    onRefreshFailed();
                 } finally {
                     isRefreshing = false;
                 }
             } else {
                 isRefreshing = false;
+                onRefreshFailed();
                 sessionStorage.clear();
                 window.location.reload();
             }
         }
 
-        // Đợi refresh token mới
-        return new Promise((resolve) => {
-            subscribeTokenRefresh(token => {
+        // Another request is already refreshing — queue this one
+        return new Promise((resolve, reject) => {
+            subscribeTokenRefresh((err, token) => {
+                if (err) { reject(err); return; }
                 options.headers['Authorization'] = `Bearer ${token}`;
                 resolve(fetch(url, options));
             });

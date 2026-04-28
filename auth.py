@@ -15,8 +15,8 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret_if_env_fails")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_SECONDS = 30
-REFRESH_TOKEN_EXPIRE_MINUTES = 10
+ACCESS_TOKEN_EXPIRE_SECONDS = 7200       # 2 hours
+REFRESH_TOKEN_EXPIRE_MINUTES = 43200    # 30 days
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login") # fallback cho form data nếu có
 
