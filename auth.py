@@ -18,7 +18,7 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_SECONDS = 7200       # 2 hours
 REFRESH_TOKEN_EXPIRE_MINUTES = 43200    # 30 days
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login") # fallback cho form data nếu có
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

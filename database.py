@@ -5,14 +5,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Lấy DATABASE_URL từ .env, hoặc dự phòng bằng SQLite
+# Get DATABASE_URL from environment or fallback to SQLite
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./energy_trading.db")
 
-# SQLAlchemy 1.4+ yêu cầu url bắt đầu bằng postgresql:// thay vì postgres://
+# SQLAlchemy 1.4+ requires postgresql:// instead of postgres://
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# connect_args chỉ dành cho SQLite (cloud DB thì trống)
+# SQLite specific arguments
 connect_args = {}
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}

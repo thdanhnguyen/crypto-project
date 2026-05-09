@@ -28,7 +28,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 # Tables are created in startup_event for better stability on Cloud
-# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="P2P Energy Trading Crypto Enhanced")
 
@@ -124,17 +123,16 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 @app.post("/web3_login", response_model=schemas.AuthResponse)
 def web3_login(login_data: schemas.Web3Login, db: Session = Depends(get_db)):
     wallet_address = login_data.wallet_address.lower()
-    # Tìm kiếm không phân biệt hoa thường với startswith hoặc exact match
+    # Search for wallet address (case-insensitive)
     db_user = db.query(models.User).filter(models.User.wallet_address.ilike(wallet_address)).first()
     
     if not db_user:
-        # Tự động đăng ký nếu chưa có
+        # Auto-register if user doesn't exist
         random_name = f"Node_{wallet_address[-4:]}"
-        # Mật khẩu rỗng hoặc dummy vì đăng nhập bằng Web3
         hashed_password = hash_password("web3_auth")
         db_user = models.User(name=random_name, password=hashed_password, wallet_address=wallet_address)
         
-        # Tặng số dư khởi tạo cho ví Web3 (giống như handleAuth cũ)
+        # Initial balances for new Web3 wallet
         db_user.token_balance = 5000.0
         db_user.energy_balance = 2000.0
         
