@@ -282,7 +282,7 @@ def get_blocks(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
 def get_market_stats(db: Session = Depends(get_db)):
     recent_txs = db.query(models.Transaction).order_by(models.Transaction.id.desc()).limit(10).all()
     if not recent_txs:
-        return {"current_price": 0.0, "total_volume": 0.0, "recommended_buy": 0.0, "recommended_sell": 0.0}
+        return {"current_price": 3000.0, "total_volume": 0.0, "recommended_buy": 2900.0, "recommended_sell": 3100.0}
     
     avg_price = sum(tx.price for tx in recent_txs) / len(recent_txs)
     total_vol = sum(tx.amount for tx in recent_txs)
