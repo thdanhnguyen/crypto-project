@@ -77,11 +77,7 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
     buyer.reputation_score += 1.0
     seller.reputation_score += 1.0
 
-    # Block generation
     last_block = db.query(Block).order_by(Block.id.desc()).first()
-    # Simple rule: a block holds max 3 txs, or just create continuously for demo if none exists.
-    # To keep it simple, let's create a new block if none or randomly (just 1 block per trade for demo)
-    # Actually, let's reuse last_block if it exists and has less than 5 txs
     tx_count_in_block = 0
     if last_block:
         tx_count_in_block = db.query(Transaction).filter(Transaction.block_id == last_block.id).count()
@@ -96,7 +92,6 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
     else:
         active_block_id = last_block.id
 
-    # Generate tx_hash
     tx_str = f"{buyer.id}-{seller.id}-{amount}-{price}-{time.time()}"
     tx_hash = "0x" + hashlib.sha256(tx_str.encode()).hexdigest()
 
@@ -114,7 +109,6 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
 
 def execute_direct_transfer(db: Session, buyer: User, seller: User, amount: float, price: float):
     total_cost = amount * price
-    # Direct transfer has lower gas fee for demo (0.5%)
     gas_fee = total_cost * 0.005 
 
     if buyer.token_balance < total_cost:
@@ -130,7 +124,6 @@ def execute_direct_transfer(db: Session, buyer: User, seller: User, amount: floa
     buyer.reputation_score += 0.5 # Direct trade gets less reputation than market match
     seller.reputation_score += 0.5
 
-    # Block and Transaction generation (reuse logic)
     last_block = db.query(Block).order_by(Block.id.desc()).first()
     tx_count_in_block = 0
     if last_block:

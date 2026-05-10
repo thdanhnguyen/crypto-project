@@ -17,7 +17,6 @@ from auth import create_access_token, create_refresh_token, get_current_user
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 def hash_password(password: str) -> str:
-    # Reduce rounds to 4 (minimum allowed) for faster hashing on Free Tier VMs
     salt = bcrypt.gensalt(rounds=4)
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
@@ -27,7 +26,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
-# Tables are created in startup_event for better stability on Cloud
 
 app = FastAPI(title="P2P Energy Trading Crypto Enhanced")
 
@@ -39,7 +37,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Websocket manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -76,7 +73,6 @@ async def websocket_endpoint(websocket: WebSocket):
 def read_root():
     return {"message": "Welcome to Crypto Enhanced P2P Energy Trading"}
 
-# --- USER ENDPOINTS ---
 
 @app.post("/register", response_model=schemas.AuthResponse)
 def register_user(user: schemas.UserRegister, db: Session = Depends(get_db)):
@@ -84,13 +80,12 @@ def register_user(user: schemas.UserRegister, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     hashed_password = hash_password(user.password)
-    # Generate a unique wallet address
     wallet_addr = "0x" + hashlib.sha256(f"{user.name}{time.time()}".encode()).hexdigest()[:10]
     db_user = models.User(
         name=user.name, 
         password=hashed_password, 
         wallet_address=wallet_addr,
-        token_balance=5000.0,
+        token_balance=5000000.0,
         energy_balance=2000.0
     )
     db.add(db_user)
@@ -110,7 +105,6 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
     try:
         is_valid = verify_password(user.password, db_user.password)
     except Exception:
-        # Fallback for old accounts with plain text passwords
         is_valid = (user.password == db_user.password)
         
     if not is_valid:
@@ -123,17 +117,14 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 @app.post("/web3_login", response_model=schemas.AuthResponse)
 def web3_login(login_data: schemas.Web3Login, db: Session = Depends(get_db)):
     wallet_address = login_data.wallet_address.lower()
-    # Search for wallet address (case-insensitive)
     db_user = db.query(models.User).filter(models.User.wallet_address.ilike(wallet_address)).first()
     
     if not db_user:
-        # Auto-register if user doesn't exist
         random_name = f"Node_{wallet_address[-4:]}"
         hashed_password = hash_password("web3_auth")
         db_user = models.User(name=random_name, password=hashed_password, wallet_address=wallet_address)
         
-        # Initial balances for new Web3 wallet
-        db_user.token_balance = 5000.0
+        db_user.token_balance = 5000000.0
         db_user.energy_balance = 2000.0
         
         db.add(db_user)
@@ -198,7 +189,6 @@ def deposit_funds(user_id: int, deposit: schemas.UserDeposit, background_tasks: 
     db.commit()
     db.refresh(db_user)
     
-    # trigger UI update
     background_tasks.add_task(notify_clients)
     return db_user
 
@@ -224,7 +214,6 @@ def transfer_funds(transfer: schemas.DirectTransferCreate, user_id: int, backgro
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# --- ORDER ENDPOINTS ---
 
 @app.post("/orders/", response_model=schemas.OrderResponse)
 def place_order(order: schemas.OrderCreate, user_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -278,7 +267,6 @@ def get_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return orders
 
 
-# --- TRANSACTION ENDPOINTS ---
 
 @app.get("/transactions/", response_model=List[schemas.TransactionResponse])
 def get_transactions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -315,19 +303,20 @@ async def market_maker_bot():
                 ai_user = db.query(models.User).filter(models.User.name == "Grid_AI").first()
                 if not ai_user:
                     hashed = hash_password("bot_password")
-                    ai_user = models.User(name="Grid_AI", password=hashed, token_balance=10000000, energy_balance=100000)
+                    ai_user = models.User(name="Grid_AI", password=hashed, token_balance=1000000000.0, energy_balance=100000.0)
                     db.add(ai_user)
                     db.commit()
                     db.refresh(ai_user)
 
-                current_price = 2.0
+                current_price = 3000.0
                 last_tx = db.query(models.Transaction).order_by(models.Transaction.id.desc()).first()
                 if last_tx:
                     current_price = last_tx.price
                 
                 order_type = random.choice(["buy", "sell"])
                 amount = round(random.uniform(5.0, 50.0), 1)
-                price = round(current_price * random.uniform(0.95, 1.05), 2)
+                price = round(current_price * random.uniform(0.90, 1.10), 0)
+                price = max(2000.0, min(5000.0, price))
                 
                 db_order = models.Order(
                     type=order_type,

@@ -11,7 +11,6 @@ function App() {
   const [stats, setStats] = useState({ current_price: 0, total_volume: 0, recommended_buy: 0, recommended_sell: 0 });
   const ws = useRef(null);
 
-  // Auth Forms
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +22,6 @@ function App() {
   const [amount, setAmount] = useState('');
   const [price, setPrice] = useState('');
 
-  // Direct P2P Form
   const [recipientWallet, setRecipientWallet] = useState('');
   const [directAmount, setDirectAmount] = useState('');
   const [directPrice, setDirectPrice] = useState('');
@@ -115,7 +113,7 @@ function App() {
         if (isRegisterMode) {
             u = await api.registerUser(username, password);
             toast.success("Wallet Created & Registered successfully!", { icon: "🌱" });
-            toast("Tặng 5000 USDT & 2000 kWh cho Tài Khoản Năng Lượng Mới", { icon: "🎁" });
+            toast("Tặng 5,000,000 VNĐ & 2000 kWh cho Tài Khoản Năng Lượng Mới", { icon: "🎁" });
         } else {
             u = await api.loginUser(username, password);
             toast.success("Đăng nhập Node thành công!");
@@ -155,7 +153,7 @@ function App() {
 
   const handlePercent = (percent) => {
       if (orderType === 'buy') {
-          const priceVal = parseFloat(price) || stats.current_price || 1;
+          const priceVal = parseFloat(price) || stats.current_price || 1000;
           const affordable = user.token_balance / priceVal;
           setAmount((affordable * (percent / 100)).toFixed(1));
       } else {
@@ -196,7 +194,6 @@ function App() {
   const sellOrdersAgg = getAggregatedOrders('sell');
   const buyOrdersAgg = getAggregatedOrders('buy');
 
-  // Login Screen
   if (!user) {
       return (
         <div className="auth-container">
@@ -253,12 +250,10 @@ function App() {
       );
   }
 
-  // Dashboard Screen
   return (
     <div className="dashboard-container">
         <Toaster position="top-right" toastOptions={{ style: {fontFamily: 'Outfit', fontWeight: 500} }}/>
         
-        {/* HEADER AREA */}
         <div className="card header-area">
             <div>
                 <h2 className="text-gradient" style={{fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
@@ -277,8 +272,8 @@ function App() {
             </div>
             <div style={{display: 'flex', gap: '1.5rem', alignItems: 'center'}}>
                 <div className="stat-box">
-                    <span className="stat-label">Tài sản Số (USDT)</span>
-                    <span className="stat-value text-gradient">${user.token_balance.toFixed(2)}</span>
+                    <span className="stat-label">Tài sản Số (VNĐ)</span>
+                    <span className="stat-value text-gradient">{user.token_balance.toLocaleString('vi-VN')} VNĐ</span>
                 </div>
                 <div className="stat-box">
                     <span className="stat-label">Pin Dự Trữ Di Động</span>
@@ -307,13 +302,13 @@ function App() {
                             </code>
                             <button className="btn-outline" onClick={() => {navigator.clipboard.writeText(user.wallet_address); toast.success('Đã copy!');}} style={{padding: '0.5rem 1rem'}}>Copy</button>
                         </div>
-                        <p style={{fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem'}}>Sử dụng địa chỉ này để nhận năng lượng hoặc USDT qua chuyển khoản P2P trực tiếp.</p>
+                        <p style={{fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem'}}>Sử dụng địa chỉ này để nhận năng lượng hoặc VNĐ qua chuyển khoản P2P trực tiếp.</p>
                     </div>
 
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
                         <div style={{background: 'rgba(0,200,83,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(0,200,83,0.1)'}}>
-                             <p className="input-label">Số dư USDT</p>
-                             <h3 className="text-gradient" style={{fontSize: '1.5rem'}}>${user.token_balance.toFixed(2)}</h3>
+                             <p className="input-label">Số dư VNĐ</p>
+                             <h3 className="text-gradient" style={{fontSize: '1.5rem'}}>{user.token_balance.toLocaleString('vi-VN')} VNĐ</h3>
                         </div>
                         <div style={{background: 'rgba(246,133,27,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(246,133,27,0.1)'}}>
                              <p className="input-label" style={{display: 'flex', justifyContent: 'space-between'}}>
@@ -385,12 +380,11 @@ function App() {
 
         {view === 'dashboard' && (
             <>
-        {/* CHART AREA */}
         <div className="card chart-area">
             <div className="card-title">
                 <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>📈 Analytics: Xu Hướng Giá Năng Lượng Nhâm Nhi</span>
                 <div style={{display: 'flex', gap: '1rem', fontSize:'0.9rem', background:'rgba(0,0,0,0.03)', padding:'0.5rem 1rem', borderRadius:'20px'}}>
-                    <div>Spot: <strong style={{color:'var(--primary)', fontSize:'1.1rem'}}>${stats.current_price}</strong></div>
+                    <div>Spot: <strong style={{color:'var(--primary)', fontSize:'1.1rem'}}>{stats.current_price.toLocaleString('vi-VN')} VNĐ</strong></div>
                     <div>24h Vol: <strong>{stats.total_volume} kWh</strong></div>
                 </div>
             </div>
@@ -419,19 +413,18 @@ function App() {
             </div>
         </div>
 
-        {/* ORDERBOOK AREA */}
         <div className="card orderbook-area">
             <div className="card-title" style={{marginBottom: '0'}}>Sổ Lệnh (Order Book)</div>
             
             <div style={{marginTop:'1rem'}}>
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', fontSize:'0.8rem', color:'#64748b', paddingBottom:'0.5rem', fontWeight:'700', textTransform:'uppercase'}}>
-                    <span>Giá ($)</span>
+                    <span>Giá (VNĐ)</span>
                     <span style={{textAlign:'right'}}>Khối Lượng</span>
                 </div>
                 <div style={{height:'180px', overflowY:'auto', paddingRight:'0.5rem', display:'flex', flexDirection:'column-reverse'}}>
                     {sellOrdersAgg.map(o => (
                         <div key={o.price} className="list-item" style={{color: 'var(--danger)', gridTemplateColumns:'1fr 1fr', display:'grid'}}>
-                            <strong style={{fontWeight:'800'}}>${o.price.toFixed(2)}</strong>
+                            <strong style={{fontWeight:'800'}}>{o.price.toLocaleString('vi-VN')} VNĐ</strong>
                             <span style={{textAlign:'right'}}>{o.amount.toFixed(1)} kWh</span>
                         </div>
                     ))}
@@ -439,14 +432,14 @@ function App() {
             </div>
 
             <div style={{textAlign:'center', fontSize:'1.4rem', fontWeight:'800', margin:'1rem 0', color:'var(--primary)', background:'rgba(0,200,83,0.05)', padding:'0.5rem', borderRadius:'8px', border:'1px solid rgba(0,200,83,0.1)'}}>
-                ${stats.current_price} <span style={{fontSize:'0.9rem', color:'#64748b', fontWeight:'500'}}>Mark Price</span>
+                {stats.current_price.toLocaleString('vi-VN')} VNĐ <span style={{fontSize:'0.9rem', color:'#64748b', fontWeight:'500'}}>Mark Price</span>
             </div>
 
             <div>
                 <div style={{height:'180px', overflowY:'auto', paddingRight:'0.5rem'}}>
                     {buyOrdersAgg.map(o => (
                         <div key={o.price} className="list-item" style={{color: 'var(--primary)', gridTemplateColumns:'1fr 1fr', display:'grid'}}>
-                            <strong style={{fontWeight:'800'}}>${o.price.toFixed(2)}</strong>
+                            <strong style={{fontWeight:'800'}}>{o.price.toLocaleString('vi-VN')} VNĐ</strong>
                             <span style={{textAlign:'right'}}>{o.amount.toFixed(1)} kWh</span>
                         </div>
                     ))}
@@ -454,7 +447,6 @@ function App() {
             </div>
         </div>
 
-        {/* TRADING PANEL */}
         <div className="card panel-area">
             <div className="card-title">Mở Trạng Thái (Spot)</div>
             
@@ -476,8 +468,8 @@ function App() {
                         <span style={{color:'var(--primary)', cursor:'pointer', textTransform:'none', fontSize:'0.75rem'}} onClick={()=>setPrice(orderType==='buy' ? stats.recommended_buy : stats.recommended_sell)}>🪄 Điền Giá AI Gợi Ý</span>
                     </label>
                     <div style={{position:'relative'}}>
-                        <input type="number" step="0.1" value={price} onChange={e=>setPrice(e.target.value)} required style={{paddingRight:'3rem'}} />
-                        <span style={{position:'absolute', right:'1rem', top:'13px', color:'#94a3b8', fontWeight:'600'}}>USDT</span>
+                        <input type="number" step="1" value={price} onChange={e=>setPrice(e.target.value)} required style={{paddingRight:'3rem'}} />
+                        <span style={{position:'absolute', right:'1rem', top:'13px', color:'#94a3b8', fontWeight:'600'}}>VNĐ</span>
                     </div>
                 </div>
                 <div>
@@ -497,7 +489,7 @@ function App() {
                 
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:'1.5rem', background:'rgba(0,0,0,0.02)', padding:'1rem', borderRadius:'12px'}}>
                     <span style={{fontWeight:'600', color:'#64748b'}}>Ước tính Tạm giữ:</span>
-                    <span style={{fontWeight:'800', fontSize:'1.2rem'}} className="text-gradient">${(parseFloat(amount||0) * parseFloat(price||0)).toFixed(2)}</span>
+                    <span style={{fontWeight:'800', fontSize:'1.2rem'}} className="text-gradient">{(parseFloat(amount||0) * parseFloat(price||0)).toLocaleString('vi-VN')} VNĐ</span>
                 </div>
                 <button type="submit" style={{width:'100%', height:'54px', backgroundColor: orderType === 'buy' ? 'var(--primary)' : 'var(--danger)', boxShadow: orderType === 'buy' ? '0 8px 25px rgba(0,200,83,0.3)' : '0 8px 25px rgba(239,68,68,0.3)'}}>
                     {orderType === 'buy' ? 'Hợp Đồng Mua Lưới Điện' : 'Đóng Lệnh Bán Điện'}
@@ -512,7 +504,7 @@ function App() {
                     <div key={o.id} className="list-item" style={{alignItems:'center', background:'var(--white)', padding:'0.75rem', marginBottom:'0.5rem', border:'1px solid rgba(0,0,0,0.05)'}}>
                         <div>
                             <span className={o.type === 'buy' ? 'badge badge-buy' : 'badge badge-sell'} style={{marginBottom:'0.25rem'}}>{o.type === 'buy' ? 'MUA' : 'BÁN'}</span>
-                            <div style={{fontWeight:'600', fontSize:'0.9rem'}}>{o.amount} <span style={{color:'#64748b', fontWeight:'400'}}>kWh</span> @ ${o.price}</div>
+                            <div style={{fontWeight:'600', fontSize:'0.9rem'}}>{o.amount} <span style={{color:'#64748b', fontWeight:'400'}}>kWh</span> @ {o.price.toLocaleString('vi-VN')} VNĐ</div>
                         </div>
                         <button className="btn-outline" style={{padding:'0.4rem 0.8rem', fontSize:'0.8rem', borderColor:'#64748b', color:'#64748b'}} onClick={() => handleCancelOrder(o.id)}>Cancel</button>
                     </div>
@@ -520,10 +512,9 @@ function App() {
             </div>
         </div>
 
-        {/* DIRECT TRANSFER PANEL - SEPARATED */}
         <div className="card direct-transfer-area" style={{height: 'fit-content'}}>
             <div className="card-title">🤝 Chuyển Năng Lượng P2P</div>
-            <p style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem'}}>Chuyển trực tiếp năng lượng của bạn tới một Node khác thông qua địa chỉ Ví, thu lại USDT ngay lập tức (ưu đãi phí gas 0.5%).</p>
+            <p style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem'}}>Chuyển trực tiếp năng lượng của bạn tới một Node khác thông qua địa chỉ Ví, thu lại VNĐ ngay lập tức (ưu đãi phí gas 0.5%).</p>
             
             <form onSubmit={handleDirectTransfer}>
                  <label className="input-label">Địa chỉ Ví Người Nhận</label>
@@ -535,21 +526,20 @@ function App() {
                         <input type="number" step="0.1" value={directAmount} onChange={e=>setDirectAmount(e.target.value)} required />
                     </div>
                     <div>
-                        <label className="input-label" style={{whiteSpace: 'nowrap'}}>Đơn giá ($)</label>
-                        <input type="number" step="0.1" value={directPrice} onChange={e=>setDirectPrice(e.target.value)} required />
+                        <label className="input-label" style={{whiteSpace: 'nowrap'}}>Đơn giá (VNĐ)</label>
+                        <input type="number" step="1" value={directPrice} onChange={e=>setDirectPrice(e.target.value)} required />
                     </div>
                  </div>
                  
                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:'1.5rem', padding:'1rem', borderRadius:'8px', border:'1px dashed #e2e8f0'}}>
-                    <span style={{fontWeight:'600', color:'#64748b', fontSize: '0.85rem'}}>Tổng USDT bạn sẽ nhận:</span>
-                    <span style={{fontWeight:'800', fontSize:'1.1rem'}} className="text-gradient">${(parseFloat(directAmount||0) * parseFloat(directPrice||0)).toFixed(2)}</span>
+                    <span style={{fontWeight:'600', color:'#64748b', fontSize: '0.85rem'}}>Tổng VNĐ bạn sẽ nhận:</span>
+                    <span style={{fontWeight:'800', fontSize:'1.1rem'}} className="text-gradient">{(parseFloat(directAmount||0) * parseFloat(directPrice||0)).toLocaleString('vi-VN')} VNĐ</span>
                  </div>
                  
                  <button type="submit" className="btn-outline" style={{width:'100%', background:'linear-gradient(135deg, #009c41, #00C853)', color:'#fff', border:'none', height: '50px'}}>Xác Nhận Chuyển</button>
             </form>
         </div>
 
-        {/* HISTORY & BLOCKS */}
         <div className={`card history-area`} style={{ 
             transition: 'all 0.5s ease',
             height: 'fit-content'
@@ -601,9 +591,9 @@ function App() {
                                     <span style={{fontWeight:'600'}}>Node #{t.seller_id}</span>
                                 </td>
                                 <td style={{color:'var(--primary)', fontWeight:'800', whiteSpace: 'nowrap'}}>
-                                    {t.amount.toFixed(1)} kWh <span style={{fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem'}}>@ ${t.price}</span>
+                                    {t.amount.toFixed(1)} kWh <span style={{fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem'}}>@ {t.price.toLocaleString('vi-VN')} VNĐ</span>
                                 </td>
-                                <td style={{ textAlign: 'right' }}><span style={{color:'var(--danger)', fontWeight:'600', fontSize: '0.8rem', background: 'rgba(239,68,68,0.05)', padding: '2px 8px', borderRadius: '4px'}}>-${t.gas_fee?.toFixed(2)}</span></td>
+                                <td style={{ textAlign: 'right' }}><span style={{color:'var(--danger)', fontWeight:'600', fontSize: '0.8rem', background: 'rgba(239,68,68,0.05)', padding: '2px 8px', borderRadius: '4px'}}>-{t.gas_fee?.toLocaleString('vi-VN')} VNĐ</span></td>
                             </tr>
                         ))}
                     </tbody>

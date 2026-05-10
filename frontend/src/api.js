@@ -44,7 +44,6 @@ const fetchWithAuth = async (url, options = {}) => {
                         sessionStorage.setItem('eco_access_token', newAuth.access_token);
                         sessionStorage.setItem('eco_refresh_token', newAuth.refresh_token);
                         onRefreshed(newAuth.access_token);
-                        // Retry original request with new token
                         options.headers["Authorization"] = `Bearer ${newAuth.access_token}`;
                         return fetch(url, options);
                     } else {
@@ -67,7 +66,6 @@ const fetchWithAuth = async (url, options = {}) => {
             }
         }
 
-        // Another request is already refreshing — queue this one
         return new Promise((resolve, reject) => {
             subscribeTokenRefresh((err, token) => {
                 if (err) { reject(err); return; }
