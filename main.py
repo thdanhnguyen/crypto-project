@@ -295,37 +295,47 @@ def get_market_stats(db: Session = Depends(get_db)):
     }
 
 async def market_maker_bot():
+    bot_target_price = 3000.0
+    cycle = 0
     while True:
-        await asyncio.sleep(12)
+        await asyncio.sleep(10)
         try:
             db = SessionLocal()
             try:
                 ai_user = db.query(models.User).filter(models.User.name == "Grid_AI").first()
                 if not ai_user:
                     hashed = hash_password("bot_password")
-                    ai_user = models.User(name="Grid_AI", password=hashed, token_balance=1000000000.0, energy_balance=100000.0)
+                    ai_user = models.User(name="Grid_AI", password=hashed, token_balance=1000000000.0, energy_balance=1000000.0)
                     db.add(ai_user)
                     db.commit()
                     db.refresh(ai_user)
 
-                current_price = 3000.0
-                last_tx = db.query(models.Transaction).order_by(models.Transaction.id.desc()).first()
-                if last_tx:
-                    current_price = last_tx.price
-                
-                order_type = random.choice(["buy", "sell"])
-                amount = round(random.uniform(5.0, 50.0), 1)
-                price = round(current_price * random.uniform(0.90, 1.10), 0)
-                price = max(2000.0, min(5000.0, price))
-                
-                db_order = models.Order(
-                    type=order_type,
-                    user_id=ai_user.id,
-                    amount=amount,
-                    price=price,
-                    status="open"
-                )
-                process_order(db, db_order)
+                cycle += 1
+
+                bot_target_price += random.uniform(-400.0, 400.0)
+                bot_target_price = max(2000.0, min(5000.0, bot_target_price))
+
+                sell_price = round(bot_target_price, 0)
+                buy_price = round(bot_target_price + random.uniform(50, 200), 0)
+                amount = round(random.uniform(10.0, 40.0), 1)
+
+                sell_order = models.Order(type="sell", user_id=ai_user.id, amount=amount, price=sell_price, status="open")
+                process_order(db, sell_order)
+
+                buy_order = models.Order(type="buy", user_id=ai_user.id, amount=amount, price=buy_price, status="open")
+                process_order(db, buy_order)
+
+                if cycle % 5 == 0:
+                    for offset in [-600, -300, 300, 600]:
+                        p = max(2000.0, min(5000.0, round(bot_target_price + offset, 0)))
+                        a = round(random.uniform(5.0, 20.0), 1)
+                        order_type = "sell" if offset > 0 else "buy"
+                        seed_order = models.Order(type=order_type, user_id=ai_user.id, amount=a, price=p, status="open")
+                        try:
+                            process_order(db, seed_order)
+                        except Exception:
+                            pass
+
             finally:
                 db.close()
             await notify_clients()
