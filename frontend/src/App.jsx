@@ -488,7 +488,7 @@ function App() {
                 </div>
                 
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:'1.5rem', background:'rgba(0,0,0,0.02)', padding:'1rem', borderRadius:'12px'}}>
-                    <span style={{fontWeight:'600', color:'#64748b'}}>Ước tính Tạm giữ:</span>
+                    <span style={{fontWeight:'600', color:'#64748b'}}>Ước tính Tạm giữ / Thu về:</span>
                     <span style={{fontWeight:'800', fontSize:'1.2rem'}} className="text-gradient">{(parseFloat(amount||0) * parseFloat(price||0)).toLocaleString('vi-VN')} VNĐ</span>
                 </div>
                 <button type="submit" style={{width:'100%', height:'54px', backgroundColor: orderType === 'buy' ? 'var(--primary)' : 'var(--danger)', boxShadow: orderType === 'buy' ? '0 8px 25px rgba(0,200,83,0.3)' : '0 8px 25px rgba(239,68,68,0.3)'}}>
@@ -514,7 +514,7 @@ function App() {
 
         <div className="card direct-transfer-area" style={{height: 'fit-content'}}>
             <div className="card-title">🤝 Chuyển Năng Lượng P2P</div>
-            <p style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem'}}>Chuyển trực tiếp năng lượng của bạn tới một Node khác thông qua địa chỉ Ví, thu lại VNĐ ngay lập tức (ưu đãi phí gas 0.5%).</p>
+            <p style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem'}}>Chuyển trực tiếp năng lượng của bạn tới một Node khác thông qua địa chỉ Ví, thu lại VNĐ ngay lập tức (ưu đãi phí gas 0.05%).</p>
             
             <form onSubmit={handleDirectTransfer}>
                  <label className="input-label">Địa chỉ Ví Người Nhận</label>
@@ -593,7 +593,7 @@ function App() {
                                 <td style={{color:'var(--primary)', fontWeight:'800', whiteSpace: 'nowrap'}}>
                                     {t.amount.toFixed(1)} kWh <span style={{fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem'}}>@ {t.price.toLocaleString('vi-VN')} VNĐ</span>
                                 </td>
-                                <td style={{ textAlign: 'right' }}><span style={{color:'var(--danger)', fontWeight:'600', fontSize: '0.8rem', background: 'rgba(239,68,68,0.05)', padding: '2px 8px', borderRadius: '4px'}}>-{t.gas_fee?.toLocaleString('vi-VN')} VNĐ</span></td>
+                                <td style={{ textAlign: 'right' }}><span style={{color:'var(--danger)', fontWeight:'600', fontSize: '0.8rem', background: 'rgba(239,68,68,0.05)', padding: '2px 8px', borderRadius: '4px'}} title="Phí giao dịch tính trên tổng giá trị">-{t.gas_fee?.toLocaleString('vi-VN')} VNĐ <span style={{fontSize: '0.7rem', opacity: 0.7}}>({t.amount > 0 && t.price > 0 ? ((t.gas_fee / (t.amount * t.price)) * 100).toFixed(2).replace(/\.?0+$/, '') : 0}%)</span></span></td>
                             </tr>
                         ))}
                     </tbody>
