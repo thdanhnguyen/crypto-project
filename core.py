@@ -66,8 +66,12 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
 
     total_cost = amount * price
     gas_fee = total_cost * 0.01 # 1% Gas Fee
+    
+    # Giả lập hao hụt truyền tải lưới điện (Transmission Loss)
+    LOSS_FACTOR = 0.02 # 2% hao hụt
+    actual_received_energy = amount * (1 - LOSS_FACTOR)
 
-    buyer.energy_balance += amount
+    buyer.energy_balance += actual_received_energy
     seller.token_balance += (total_cost - gas_fee) # Deduct from seller for simplicity
     
     price_difference = buy_order.price - price
@@ -78,11 +82,19 @@ def execute_trade(db: Session, buy_order: Order, sell_order: Order, amount: floa
     seller.reputation_score += 1.0
 
     last_block = db.query(Block).order_by(Block.id.desc()).first()
-    tx_count_in_block = 0
-    if last_block:
-        tx_count_in_block = db.query(Transaction).filter(Transaction.block_id == last_block.id).count()
+    
+    # Cơ chế sinh Block dựa trên thời gian thực tế (Block Time = 10s) thay vì đếm số giao dịch
+    BLOCK_TIME = 10 
+    should_create_new_block = False
+    
+    if not last_block:
+        should_create_new_block = True
+    else:
+        time_since_last_block = (datetime.datetime.utcnow() - last_block.timestamp).total_seconds()
+        if time_since_last_block >= BLOCK_TIME:
+            should_create_new_block = True
 
-    if not last_block or tx_count_in_block >= 5:
+    if should_create_new_block:
         b_hash = hashlib.sha256(str(time.time()).encode()).hexdigest()
         new_block = Block(block_hash=b_hash)
         db.add(new_block)
@@ -116,8 +128,12 @@ def execute_direct_transfer(db: Session, buyer: User, seller: User, amount: floa
     if seller.energy_balance < amount:
         raise ValueError("Insufficient energy")
 
+    # Giả lập hao hụt truyền tải lưới điện (Transmission Loss)
+    LOSS_FACTOR = 0.02 # 2% hao hụt
+    actual_received_energy = amount * (1 - LOSS_FACTOR)
+
     buyer.token_balance -= total_cost
-    buyer.energy_balance += amount
+    buyer.energy_balance += actual_received_energy
     seller.energy_balance -= amount
     seller.token_balance += (total_cost - gas_fee)
 
@@ -125,11 +141,19 @@ def execute_direct_transfer(db: Session, buyer: User, seller: User, amount: floa
     seller.reputation_score += 0.5
 
     last_block = db.query(Block).order_by(Block.id.desc()).first()
-    tx_count_in_block = 0
-    if last_block:
-        tx_count_in_block = db.query(Transaction).filter(Transaction.block_id == last_block.id).count()
+    
+    # Cơ chế sinh Block dựa trên thời gian (Block Time = 10s) thay vì đếm giao dịch
+    BLOCK_TIME = 10 
+    should_create_new_block = False
+    
+    if not last_block:
+        should_create_new_block = True
+    else:
+        time_since_last_block = (datetime.datetime.utcnow() - last_block.timestamp).total_seconds()
+        if time_since_last_block >= BLOCK_TIME:
+            should_create_new_block = True
 
-    if not last_block or tx_count_in_block >= 5:
+    if should_create_new_block:
         b_hash = hashlib.sha256(str(time.time()).encode()).hexdigest()
         new_block = Block(block_hash=b_hash)
         db.add(new_block)

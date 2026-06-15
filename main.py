@@ -184,6 +184,11 @@ def deposit_funds(user_id: int, deposit: schemas.UserDeposit, background_tasks: 
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     
+    if db_user.token_balance + deposit.token_amount < 0:
+        raise HTTPException(status_code=400, detail="Không đủ số dư VNĐ để thực hiện rút")
+    if db_user.energy_balance + deposit.energy_amount < 0:
+        raise HTTPException(status_code=400, detail="Không đủ số dư Năng lượng để thực hiện rút")
+    
     db_user.token_balance += deposit.token_amount
     db_user.energy_balance += deposit.energy_amount
     db.commit()
